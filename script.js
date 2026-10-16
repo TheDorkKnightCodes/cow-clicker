@@ -89,40 +89,92 @@ function popup(x, y, text) {
   setTimeout(() => el.remove(), 800);
 }
 
-// Short synthesized "moo": a falling, wobbly sawtooth through a low-pass filter
-let audio;
+// Synthesized "moo". A cow's voice is a low, rough buzz shaped by the mouth:
+// closed ("mmm") at first, then opening into "ooo" while the pitch rises and
+// falls. Two slightly detuned sawtooths give the roughness, a pair of formant
+// filters gives the "oo" vowel, and a little filtered noise adds breath.
+let audio, noiseBuffer, currentMoo;
 function moo() {
   if (state.muted) return;
   try {
     audio ||= new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === "suspended") audio.resume();
     const t = audio.currentTime;
-    const pitch = 0.9 + Math.random() * 0.2;
+    const p = 0.85 + Math.random() * 0.3; // each moo a slightly different cow
+    const len = 0.75 + Math.random() * 0.25;
 
-    const osc = audio.createOscillator();
-    osc.type = "sawtooth";
-    osc.frequency.setValueAtTime(150 * pitch, t);
-    osc.frequency.exponentialRampToValueAtTime(105 * pitch, t + 0.4);
+    // Cut off the previous moo so rapid clicking doesn't pile up into a choir
+    if (currentMoo) {
+      currentMoo.gain.cancelScheduledValues(t);
+      currentMoo.gain.setTargetAtTime(0, t, 0.03);
+    }
 
-    const wobble = audio.createOscillator();
-    const wobbleDepth = audio.createGain();
-    wobble.frequency.value = 6;
-    wobbleDepth.gain.value = 4;
-    wobble.connect(wobbleDepth).connect(osc.frequency);
+    const out = audio.createGain();
+    out.gain.setValueAtTime(0.0001, t);
+    out.gain.exponentialRampToValueAtTime(0.5, t + 0.12);
+    out.gain.setValueAtTime(0.5, t + len * 0.6);
+    out.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    out.connect(audio.destination);
+    currentMoo = out;
 
-    const filter = audio.createBiquadFilter();
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(500, t);
-    filter.frequency.linearRampToValueAtTime(1200, t + 0.12);
-    filter.frequency.linearRampToValueAtTime(400, t + 0.4);
+    // Mouth: starts nearly closed, opens, then closes a little as it trails off
+    const mouth = audio.createBiquadFilter();
+    mouth.type = "lowpass";
+    mouth.Q.value = 1;
+    mouth.frequency.setValueAtTime(250, t);
+    mouth.frequency.exponentialRampToValueAtTime(1100, t + len * 0.3);
+    mouth.frequency.exponentialRampToValueAtTime(500, t + len);
 
-    const gain = audio.createGain();
-    gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(0.25, t + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+    // "oo" vowel formants
+    const f1 = audio.createBiquadFilter();
+    f1.type = "peaking"; f1.frequency.value = 320; f1.Q.value = 2; f1.gain.value = 10;
+    const f2 = audio.createBiquadFilter();
+    f2.type = "peaking"; f2.frequency.value = 800; f2.Q.value = 3; f2.gain.value = 6;
+    mouth.connect(f1).connect(f2).connect(out);
 
-    osc.connect(filter).connect(gain).connect(audio.destination);
-    osc.start(t); wobble.start(t);
-    osc.stop(t + 0.46); wobble.stop(t + 0.46);
+    // Voice: pitch rises then sags
+    const voice = audio.createGain();
+    voice.gain.value = 0.35;
+    voice.connect(mouth);
+    const pitch = (o, detune) => {
+      o.type = "sawtooth";
+      o.detune.value = detune;
+      o.frequency.setValueAtTime(92 * p, t);
+      o.frequency.exponentialRampToValueAtTime(128 * p, t + len * 0.3);
+      o.frequency.exponentialRampToValueAtTime(82 * p, t + len);
+      o.connect(voice);
+      o.start(t);
+      o.stop(t + len + 0.05);
+    };
+    const a = audio.createOscillator(), b = audio.createOscillator();
+    pitch(a, -7);
+    pitch(b, 9);
+
+    // Slow, uneven wobble in the throat
+    const wob = audio.createOscillator(), wobAmt = audio.createGain();
+    wob.frequency.value = 4.5 + Math.random() * 2;
+    wobAmt.gain.value = 2.5 * p;
+    wob.connect(wobAmt);
+    wobAmt.connect(a.frequency);
+    wobAmt.connect(b.frequency);
+    wob.start(t);
+    wob.stop(t + len + 0.05);
+
+    // Breath
+    if (!noiseBuffer) {
+      noiseBuffer = audio.createBuffer(1, audio.sampleRate, audio.sampleRate);
+      const d = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const noise = audio.createBufferSource();
+    noise.buffer = noiseBuffer;
+    const breathFilter = audio.createBiquadFilter();
+    breathFilter.type = "bandpass"; breathFilter.frequency.value = 900; breathFilter.Q.value = 0.8;
+    const breath = audio.createGain();
+    breath.gain.value = 0.04;
+    noise.connect(breathFilter).connect(breath).connect(mouth);
+    noise.start(t);
+    noise.stop(t + len + 0.05);
   } catch {}
 }
 
