@@ -1,16 +1,18 @@
 const GOAL = 100_000_000;
 const SAVE_KEY = "cow-clicker-save";
 
-// perClick adds to each manual click; perSec clicks automatically
+// perClick adds to each manual click; perSec clicks automatically.
+// Each tier is 10x stronger for a bit under 10x the price, so bigger
+// upgrades are always slightly better value than the ones before them.
 const UPGRADES = [
-  { id: "glove",   name: "Clicking Glove",  desc: "+1 per click",   base: 15,        perClick: 1 },
-  { id: "hand",    name: "Farmhand",        desc: "+1 per second",  base: 100,       perSec: 1 },
-  { id: "bell",    name: "Cow Bell",        desc: "+10 per click",  base: 1_000,     perClick: 10 },
-  { id: "milker",  name: "Milking Machine", desc: "+25 per second", base: 5_000,     perSec: 25 },
-  { id: "barn",    name: "Bigger Barn",     desc: "+300 per second", base: 60_000,   perSec: 300 },
-  { id: "tractor", name: "Tractor",         desc: "+500 per click", base: 250_000,   perClick: 500 },
-  { id: "herd",    name: "Entire Herd",     desc: "+5,000 per second", base: 2_000_000, perSec: 5_000 },
-  { id: "ufo",     name: "Cow Abduction",   desc: "+60,000 per second", base: 30_000_000, perSec: 60_000 },
+  { id: "glove",   name: "Clicking Glove",  desc: "+1 per click",       base: 15,      perClick: 1 },
+  { id: "hand",    name: "Farmhand",        desc: "+1 per second",      base: 100,     perSec: 1 },
+  { id: "bell",    name: "Cow Bell",        desc: "+10 per click",      base: 125,     perClick: 10 },
+  { id: "milker",  name: "Milking Machine", desc: "+10 per second",     base: 900,     perSec: 10 },
+  { id: "tractor", name: "Tractor",         desc: "+100 per click",     base: 1_000,   perClick: 100 },
+  { id: "barn",    name: "Bigger Barn",     desc: "+100 per second",    base: 8_000,   perSec: 100 },
+  { id: "herd",    name: "Entire Herd",     desc: "+1,000 per second",  base: 70_000,  perSec: 1_000 },
+  { id: "ufo",     name: "Cow Abduction",   desc: "+10,000 per second", base: 600_000, perSec: 10_000 },
 ];
 
 let state = load();
