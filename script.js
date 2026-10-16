@@ -18,9 +18,9 @@ let state = load();
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY));
-    if (s && typeof s.clicks === "number") return { clicks: s.clicks, owned: s.owned || {}, won: !!s.won };
+    if (s && typeof s.clicks === "number") return { clicks: s.clicks, owned: s.owned || {}, won: !!s.won, muted: !!s.muted };
   } catch {}
-  return { clicks: 0, owned: {}, won: false };
+  return { clicks: 0, owned: {}, won: false, muted: false };
 }
 
 function save() {
@@ -28,7 +28,7 @@ function save() {
 }
 
 const owned = (u) => state.owned[u.id] || 0;
-const cost = (u) => Math.ceil(u.base * 1.15 ** owned(u));
+const cost = (u) => u.base;
 const perClick = () => 1 + UPGRADES.reduce((n, u) => n + (u.perClick || 0) * owned(u), 0);
 const perSec = () => UPGRADES.reduce((n, u) => n + (u.perSec || 0) * owned(u), 0);
 const fmt = (n) => Math.floor(n).toLocaleString("en-US");
@@ -89,7 +89,56 @@ function popup(x, y, text) {
   setTimeout(() => el.remove(), 800);
 }
 
+// Short synthesized "moo": a falling, wobbly sawtooth through a low-pass filter
+let audio;
+function moo() {
+  if (state.muted) return;
+  try {
+    audio ||= new (window.AudioContext || window.webkitAudioContext)();
+    const t = audio.currentTime;
+    const pitch = 0.9 + Math.random() * 0.2;
+
+    const osc = audio.createOscillator();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(150 * pitch, t);
+    osc.frequency.exponentialRampToValueAtTime(105 * pitch, t + 0.4);
+
+    const wobble = audio.createOscillator();
+    const wobbleDepth = audio.createGain();
+    wobble.frequency.value = 6;
+    wobbleDepth.gain.value = 4;
+    wobble.connect(wobbleDepth).connect(osc.frequency);
+
+    const filter = audio.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(500, t);
+    filter.frequency.linearRampToValueAtTime(1200, t + 0.12);
+    filter.frequency.linearRampToValueAtTime(400, t + 0.4);
+
+    const gain = audio.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.25, t + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+
+    osc.connect(filter).connect(gain).connect(audio.destination);
+    osc.start(t); wobble.start(t);
+    osc.stop(t + 0.46); wobble.stop(t + 0.46);
+  } catch {}
+}
+
+function renderMute() {
+  $("mute").textContent = state.muted ? "Sound: Off" : "Sound: On";
+  $("mute").setAttribute("aria-pressed", String(!state.muted));
+}
+
+$("mute").addEventListener("click", () => {
+  state.muted = !state.muted;
+  save();
+  renderMute();
+});
+
 $("cow").addEventListener("click", (e) => {
+  moo();
   const gain = perClick();
   state.clicks += gain;
   // keyboard activation has no pointer position; fall back to the cow's centre
@@ -102,7 +151,7 @@ $("cow").addEventListener("click", (e) => {
 
 $("reset").addEventListener("click", () => {
   if (!confirm("Reset all your clicks and upgrades?")) return;
-  state = { clicks: 0, owned: {}, won: false };
+  state = { clicks: 0, owned: {}, won: false, muted: state.muted };
   save();
   render();
 });
@@ -121,4 +170,5 @@ setInterval(save, 5000);
 window.addEventListener("beforeunload", save);
 
 buildShop();
+renderMute();
 render();
