@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cow Clicker</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐄</text></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="window">
+    <div class="titlebar">
+      <span>CowClicker.exe</span>
+      <span class="buttons"><i>_</i><i>□</i><i>×</i></span>
+    </div>
+
+    <main>
+      <section class="field">
+        <div class="counter">
+          <div class="clicks" id="clicks">0</div>
+          <div class="label">clicks</div>
+          <div class="rate"><span id="perClick">1</span> per click · <span id="perSec">0</span> per second</div>
+        </div>
+
+        <button id="cow" class="cow" aria-label="Click the cow">
+          <svg viewBox="0 0 200 160" width="220" height="176" aria-hidden="true">
+            <ellipse cx="100" cy="150" rx="70" ry="8" fill="#0003"/>
+            <!-- legs -->
+            <rect x="52" y="105" width="14" height="42" rx="4" fill="#f4f1ea" stroke="#222" stroke-width="3"/>
+            <rect x="74" y="105" width="14" height="42" rx="4" fill="#f4f1ea" stroke="#222" stroke-width="3"/>
+            <rect x="118" y="105" width="14" height="42" rx="4" fill="#f4f1ea" stroke="#222" stroke-width="3"/>
+            <rect x="140" y="105" width="14" height="42" rx="4" fill="#f4f1ea" stroke="#222" stroke-width="3"/>
+            <!-- body -->
+            <rect x="40" y="55" width="125" height="65" rx="28" fill="#f4f1ea" stroke="#222" stroke-width="3"/>
+            <path d="M70 58 q20 10 10 30 q-15 10 -25 -5 q-5 -18 15 -25z" fill="#222"/>
+            <path d="M125 75 q18 -5 22 12 q0 18 -18 15 q-14 -10 -4 -27z" fill="#222"/>
+            <!-- tail -->
+            <path d="M165 75 q15 10 8 35" fill="none" stroke="#222" stroke-width="3"/>
+            <!-- udder -->
+            <ellipse cx="110" cy="120" rx="12" ry="7" fill="#f2a7b5" stroke="#222" stroke-width="3"/>
+            <!-- head -->
+            <rect x="12" y="30" width="50" height="55" rx="18" fill="#f4f1ea" stroke="#222" stroke-width="3"/>
+            <path d="M18 30 l-10 -12 M56 30 l10 -12" stroke="#c9b48a" stroke-width="6" stroke-linecap="round"/>
+            <ellipse cx="37" cy="72" rx="24" ry="14" fill="#f2a7b5" stroke="#222" stroke-width="3"/>
+            <circle cx="29" cy="72" r="3" fill="#222"/><circle cx="45" cy="72" r="3" fill="#222"/>
+            <circle cx="27" cy="48" r="4" fill="#222"/><circle cx="47" cy="48" r="4" fill="#222"/>
+          </svg>
+        </button>
+
+        <div class="progress">
+          <div class="bar"><div id="bar"></div></div>
+          <div class="goal"><span id="pct">0%</span> of 100,000,000</div>
+        </div>
+      </section>
+
+      <aside class="shop">
+        <h2>Barn Upgrades</h2>
+        <div id="shop"></div>
+        <button id="reset" class="reset">Reset progress</button>
+      </aside>
+    </main>
+  </div>
+
+  <div id="win" class="win" hidden>
+    <div class="win-box">
+      <h2>🏆 100,000,000 clicks</h2>
+      <p>You clicked the cow. A lot. Was it worth it?</p>
+      <button id="winClose">Keep clicking</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
